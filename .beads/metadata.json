@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "NeuroCortex",
+  "project_id": "11c480f8-0ada-4680-acfa-4700f0f520dc"
+}
