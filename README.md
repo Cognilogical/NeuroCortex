@@ -1,5 +1,9 @@
 # 🧠 NeuroCortex
 
+<p align="center">
+  <img src="docs/images/NeuroCortex-banner.png" alt="NeuroCortex Banner" width="100%">
+</p>
+
 > **LLMs are brilliant dreamers, but dangerous operators.** 
 
 You are giving autonomous AI agents root access to your machine. Every time they hallucinate a non-existent package, invent a destructive flag, or run the wrong script, they aren't just making a mistake—they are executing it directly on your host OS. 
