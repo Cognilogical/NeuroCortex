@@ -4,53 +4,49 @@
   <img src="docs/images/NeuroCortex-banner.png" alt="NeuroCortex Banner" width="100%">
 </p>
 
-> **LLMs are brilliant dreamers, but dangerous operators.** 
+> **The #1 barrier to enterprise AI isn't context windows. It's trust. I can cure AI hallucination. Watch.**
 
-You are giving autonomous AI agents root access to your machine. Every time they hallucinate a non-existent package, invent a destructive flag, or run the wrong script, they aren't just making a mistake—they are executing it directly on your host OS. 
-
-NeuroCortex is the antidote. It is the world's first **CDE (Cognitive Deterministic Engine)**. A CDE bridges the gap between the unpredictable, probabilistic nature of LLMs (Cognitive) and the strict, unforgiving physics of computer systems (Deterministic). It provides **ReCognition**—the ultimate Maker-Checker feedback loop. When an agent hallucinates, NeuroCortex intercepts the action, sandboxes it, and forces the AI into "re-cognition" (thinking again) to correct its error *before* it touches reality. By enforcing this biological immune response, NeuroCortex transforms vulnerable, open-loop text generators into safe, closed-loop engineering systems. 
-
-Stop trusting your AI. Sandbox it with ReCognition.
+NeuroCortex is a **CDE (Cognitive Deterministic Engine)**—a simulated physics engine for code. It provides a deterministic reality where AI agents can safely operate, testing their assumptions against actual system constraints. When an agent hallucinates a non-existent package, an incorrect API, or an imaginary flag, NeuroCortex intercepts the action within this reality engine. Instead of failing in production or causing damage on your host OS, the hallucination physically bounces back to the AI, forcing it to self-correct via **ReCognition** before a human ever sees the mistake.
 
 ## 🚀 The End of Open-Loop AI
 
-Today's AI coding workflows operate on blind faith: they generate commands, run them, and hope nothing breaks. NeuroCortex replaces hope with a mandatory CDE built on the Model Context Protocol (MCP). Every state-mutating action is physically trapped and evaluated against your project's architectural constraints. Through the power of ReCognition, if an agent hallucinates, the damage happens in the sandbox, not your system, and the agent is instantly corrected.
+Today's AI coding workflows operate on blind faith: they generate commands and hope they work. NeuroCortex replaces this open-loop generation with a mandatory, deterministic physics engine built on the Model Context Protocol (MCP). Every state-mutating action is evaluated within this engine. Through the power of ReCognition, if an agent hallucinates, it hits the boundaries of our simulated reality, instantly triggering a self-correction loop.
 
 ## 📊 Scientific Efficacy: Measuring Hallucination Reduction
 
 NeuroCortex doesn't stop an LLM from *generating* a hallucination—it prevents the hallucination from *taking effect*. By forcing the agent into ReCognition inside a controlled simulation, we observe dramatic drops in realized errors across all frontier models:
 
-*   **Operational/CLI Hallucinations (~85% - 95% Reduction):** Commands invoking imaginary packages or hallucinated flags are trapped. The sandbox returns standard POSIX exit codes, instantly triggering ReCognition and forcing the LLM to self-correct.
+*   **Operational/CLI Hallucinations (~85% - 95% Reduction):** Commands invoking imaginary packages or hallucinated flags hit a wall. The engine returns standard POSIX exit codes, instantly triggering ReCognition and forcing the LLM to self-correct.
 *   **Contextual & Rule-Based Hallucinations (~70% - 90% Reduction):** NeuroCortex uses local semantic vector search to intercept intents that violate your specific architectural constraints *before* execution.
-*   **Code/API Hallucinations (~40% - 60% Reduction):** Hallucinated APIs are caught the moment the agent attempts to run or test the script within the sandbox, preventing cascading failures.
+*   **Code/API Hallucinations (~40% - 60% Reduction):** Hallucinated APIs are caught the moment the agent attempts to run or test the script within the reality engine, preventing cascading failures.
 
 ## 🏗️ Architecture
 
-NeuroCortex is a standalone Rust Model Context Protocol (MCP) server, strictly decoupled from other tools to guarantee high performance, tool-agnosticism, zero telemetry, and absolute isolation. Its core architectural pillars enable the ReCognition loop:
+NeuroCortex is a standalone Rust Model Context Protocol (MCP) server, acting as the physics engine for your AI agents. Its core architectural pillars define the boundaries of this reality:
 
 ### 1. SynapGuard: The Semantic Interceptor
 *   **Local Vector DB:** Powered by embedded **LanceDB**, eliminating external dependencies.
-*   **FastEmbed:** Uses `NomicEmbedTextV15` to compute embeddings entirely locally. It shares a read-only model cache (`~/.cache/neuro/models/fastembed`) to save disk space, while maintaining its own isolated, tamper-proof constraint database.
-*   **Mechanism:** When an agent proposes an action, SynapGuard checks its vector database for matching behavioral rules. If triggered, it blocks the action with a deterministic `SandboxReject`, enforcing ReCognition by returning the exact constraint text to the agent.
+*   **FastEmbed:** Uses `NomicEmbedTextV15` to compute embeddings entirely locally.
+*   **Mechanism:** SynapGuard acts as the invisible walls of the physics engine. When an agent proposes an action, SynapGuard checks its vector database. If it violates a constraint, the hallucination hits a wall, bouncing back with a deterministic `SandboxReject` to enforce ReCognition.
 
 ### 2. IsoCell: The Ephemeral Sandbox
-*   **Rootless Podman:** All actions that pass SynapGuard are safely executed inside IsoCell, an ephemeral, rootless Podman environment. Your host OS remains pristine.
-*   **High Concurrency:** Unique container naming and LanceDB's optimistic concurrency control allow dozens of agents to be sandboxed simultaneously in their own IsoCells without collision.
+*   **Rootless Podman:** All actions that pass SynapGuard are executed inside IsoCell, an ephemeral, rootless Podman environment. This is the tangible reality where code is tested safely.
+*   **High Concurrency:** Unique container naming and LanceDB's optimistic concurrency control allow dozens of agents to simulate actions simultaneously in their own IsoCells.
 
 ### 3. HomeoState: Fail-Open Degradation
-*   **Graceful Degradation:** If nested container privileges are missing, HomeoState ensures the architectural design gracefully degrades to keep the agent workflow running smoothly, rather than bricking the workflow.
+*   **Graceful Degradation:** If nested container privileges are missing, HomeoState ensures the architectural design gracefully degrades to keep the agent workflow running smoothly.
 
 ## 🛡️ Security & Hardening (OWASP Top 10 for LLMs)
 
-NeuroCortex is engineered from the ground up to mitigate the most critical vulnerabilities in autonomous AI systems, adhering to the OWASP Top 10 for LLMs through our CDE architecture:
+As an enterprise bonus, the deterministic reality provided by NeuroCortex naturally mitigates the most critical vulnerabilities in autonomous AI systems (OWASP Top 10 for LLMs):
 
-*   **Zero Network Attack Surface (Mitigates LLM07):** NeuroCortex operates as a pure stdio MCP server. It listens on zero ports and exposes no external APIs, effectively neutralizing remote code execution (RCE) and plugin exploitation vectors.
-*   **Active Secret Scrubbing (Mitigates LLM06):** The Rust-powered SynapGuard backend actively scans memory payloads for high-entropy secrets (e.g., API keys, passwords, JWTs). If detected, it explicitly rejects execution, forcing the agent into a ReCognition "Redaction Loop" to prevent permanent context and host contamination.
-*   **Role-Based Memory Isolation (Mitigates LLM08):** Destructive actions and rule modifications are strictly restricted. Sandboxed task agents executing within an IsoCell have no network or socket access to the LanceDB backend, ensuring that only the parent orchestrator agent can curate SynapGuard rules.
-*   **Resilient Soft Locks (Mitigates LLM09):** To combat context degradation and "happy path" tunnel vision, NeuroCortex enforces physical execution constraints through its Maker-Checker architecture, rather than relying solely on fragile system prompts. Agents physically cannot bypass the sandbox.
+*   **Zero Network Attack Surface (Mitigates LLM07):** NeuroCortex operates as a pure stdio MCP server. It listens on zero ports and exposes no external APIs.
+*   **Active Secret Scrubbing (Mitigates LLM06):** The Rust-powered backend actively scans payloads for high-entropy secrets (e.g., API keys, passwords). If detected, it explicitly rejects execution, forcing the agent into a "Redaction Loop".
+*   **Role-Based Memory Isolation (Mitigates LLM08):** Sandboxed task agents executing within an IsoCell have no network or socket access to the backend, ensuring isolated curation of rules.
+*   **Resilient Soft Locks (Mitigates LLM09):** Agents are physically bound by the rules of the engine. They cannot bypass the sandbox, ensuring safe operation even when context degrades.
 
 ## 🔌 Integration (MCP)
 
 NeuroCortex operates globally via the Model Context Protocol (MCP). Once registered in your `mcp.json` or `opencode.json`, agents gain immediate access to:
-*   `neurocortex_local_guard_validate`: The main SynapGuard CDE entry point for evaluating commands.
-*   `neurocortex_learn_behavioral_rule`: The endpoint for teaching the sandbox new semantic constraints on the fly.
+*   `neurocortex_local_guard_validate`: The main entry point for evaluating commands within the physics engine.
+*   `neurocortex_learn_behavioral_rule`: The endpoint for teaching the engine new semantic constraints on the fly.
