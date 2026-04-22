@@ -1,3 +1,4 @@
+use crate::embedded_llm::evaluate_intent_embedded;
 use crate::models::{BehavioralRule, ValidateVerdict};
 use arrow::array::{
     FixedSizeListArray, Float32Array, RecordBatch, RecordBatchReader, StringArray, UInt32Array,
@@ -8,9 +9,9 @@ use fastembed::{EmbeddingModel, InitOptions, TextEmbedding};
 use futures::StreamExt;
 use lancedb::query::{ExecutableQuery, QueryBase};
 use log::{error, info};
-use reqwest::Client;
+use reqwest;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -88,7 +89,6 @@ fn find_existing_cache_dir() -> PathBuf {
 }
 
 pub struct SemanticEvaluator {
-    client: Arc<Client>,
     db_uri: String,
     embedder: TextEmbedding,
     dimensions: usize,
@@ -121,7 +121,6 @@ impl SemanticEvaluator {
         .map_err(|e| anyhow::anyhow!("Failed to initialize embedder: {}", e))?;
 
         Ok(Self {
-            client: Arc::new(Client::new()),
             db_uri,
             embedder,
             dimensions: target_model.dimensions,
@@ -325,31 +324,12 @@ impl SemanticEvaluator {
         payload: &str,
         user_intent: &str,
     ) -> anyhow::Result<ValidateVerdict> {
-        let prompt = format!(
-            "You are a strict guardrail for an AI agent.\n\n\
-            User Intent: {}\n\n\
-            Proposed Action: {}\n\n\
-            Does the proposed action align with the user intent? If no, explain why. Return JSON: {{ \"approved\": bool, \"reason\": \"\" }}",
-            user_intent, payload
-        );
-
-        let res = self
-            .client
-            .post("http://localhost:11434/api/generate")
-            .json(&json!({
-                "model": "qwen2.5-coder",
-                "prompt": prompt,
-                "stream": false,
-                "format": "json"
-            }))
-            .send()
-            .await;
+        let res = evaluate_intent_embedded(payload, user_intent).await;
 
         match res {
-            Ok(resp) if resp.status().is_success() => {
-                let body: Value = resp.json().await?;
-                if let Some(resp_text) = body["response"].as_str() {
-                    let parsed: Value = serde_json::from_str(resp_text)?;
+            Ok(resp_text) => {
+                // Try to parse the output as JSON
+                if let Ok(parsed) = serde_json::from_str::<Value>(&resp_text) {
                     let approved = parsed["approved"].as_bool().unwrap_or(false);
                     let reason = parsed["reason"].as_str().unwrap_or("").to_string();
 
@@ -363,27 +343,19 @@ impl SemanticEvaluator {
                             constraints: vec![],
                         });
                     }
+                } else {
+                    error!("Semantic validation API returned unparseable JSON: {}", resp_text);
+                    return Ok(ValidateVerdict::ApprovedFailOpen {
+                        warning: format!("Semantic validation API error: invalid format returned"),
+                    });
                 }
             }
-            Ok(resp) => {
-                error!(
-                    "Semantic validation API returned error status: {}",
-                    resp.status()
-                );
-                return Ok(ValidateVerdict::ApprovedFailOpen {
-                    warning: format!("Semantic validation API error: {}", resp.status()),
-                });
-            }
             Err(e) => {
-                error!("Semantic validation API request failed: {}", e);
+                error!("Semantic validation embedded model failed: {}", e);
                 return Ok(ValidateVerdict::ApprovedFailOpen {
                     warning: "Semantic validation unavailable. Failing open.".to_string(),
                 });
             }
         }
-
-        Ok(ValidateVerdict::ApprovedFailOpen {
-            warning: "Semantic validation failed to parse. Failing open.".to_string(),
-        })
     }
 }

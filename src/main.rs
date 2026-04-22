@@ -6,6 +6,7 @@ use tokio::io::BufReader;
 mod models;
 mod sandbox;
 mod semantic;
+pub mod embedded_llm;
 
 use models::{BehavioralRule, ValidateRequest, ValidateResponse, ValidateVerdict};
 use sandbox::SandboxEvaluator;

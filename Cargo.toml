@@ -15,7 +15,7 @@ async-trait = "0.1"
 tokio-process = "0.2"
 
 # For LLM inference / local LLM calling
-reqwest = { version = "0.11", features = ["json"] }
+reqwest = { version = "0.11", features = ["json", "stream"] }
 
 # LanceDB for storing rules
 lancedb = "0.27"
@@ -25,3 +25,8 @@ env_logger = "0.11.10"
 fastembed = "4"
 futures = "0.3"
 uuid = { version = "1.23.1", features = ["v4"] }
+
+# Native Embedded LLM Engine
+llama-cpp-2 = "0.1.144"
+walkdir = "2.5.0"
+
