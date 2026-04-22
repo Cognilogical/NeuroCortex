@@ -63,6 +63,7 @@ fn find_model_in_caches(filename: &str) -> Option<PathBuf> {
         home_path.join(".ollama/models/blobs"),
         home_path.join(".cache/lm-studio/models"),
         home_path.join(".cache/neuro/models"),
+        home_path.join("Documents/NeuroPlasticity/.neuroplasticity/models"), // Explicitly check sister project
     ];
 
     for dir in cache_dirs {
