@@ -36,6 +36,15 @@ NeuroCortex is a standalone Rust Model Context Protocol (MCP) server, strictly d
 ### 3. HomeoState: Fail-Open Degradation
 *   **Graceful Degradation:** If nested container privileges are missing, HomeoState ensures the architectural design gracefully degrades to keep the agent workflow running smoothly, rather than bricking the workflow.
 
+## 🛡️ Security & Hardening (OWASP Top 10 for LLMs)
+
+NeuroCortex is engineered from the ground up to mitigate the most critical vulnerabilities in autonomous AI systems, adhering to the OWASP Top 10 for LLMs through our CDE architecture:
+
+*   **Zero Network Attack Surface (Mitigates LLM07):** NeuroCortex operates as a pure stdio MCP server. It listens on zero ports and exposes no external APIs, effectively neutralizing remote code execution (RCE) and plugin exploitation vectors.
+*   **Active Secret Scrubbing (Mitigates LLM06):** The Rust-powered SynapGuard backend actively scans memory payloads for high-entropy secrets (e.g., API keys, passwords, JWTs). If detected, it explicitly rejects execution, forcing the agent into a ReCognition "Redaction Loop" to prevent permanent context and host contamination.
+*   **Role-Based Memory Isolation (Mitigates LLM08):** Destructive actions and rule modifications are strictly restricted. Sandboxed task agents executing within an IsoCell have no network or socket access to the LanceDB backend, ensuring that only the parent orchestrator agent can curate SynapGuard rules.
+*   **Resilient Soft Locks (Mitigates LLM09):** To combat context degradation and "happy path" tunnel vision, NeuroCortex enforces physical execution constraints through its Maker-Checker architecture, rather than relying solely on fragile system prompts. Agents physically cannot bypass the sandbox.
+
 ## 🔌 Integration (MCP)
 
 NeuroCortex operates globally via the Model Context Protocol (MCP). Once registered in your `mcp.json` or `opencode.json`, agents gain immediate access to:

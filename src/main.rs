@@ -42,34 +42,47 @@ async fn main() -> anyhow::Result<()> {
                     let args = &params["arguments"];
                     let action_req: ValidateRequest = serde_json::from_value(args.clone())?;
 
-                    // Retrieve top constraints
-                    let matched_rules = semantic_eval
-                        .match_constraints(&action_req.payload)
-                        .await
-                        .unwrap_or(vec![]);
-                    let constraint_texts: Vec<String> = matched_rules
-                        .iter()
-                        .map(|r| r.constraint_text.clone())
-                        .collect();
-                    let rule_ids: Vec<String> =
-                        matched_rules.iter().map(|r| r.id.clone()).collect();
+                    // 1. Active Secret Scrubbing (Mitigates OWASP LLM06)
+                    let secret_prefixes = ["sk-ant-", "sk-proj-", "ghp_", "xoxb-", "Bearer eyJ", "AKIA"];
+                    let has_secrets = secret_prefixes.iter().any(|prefix| action_req.payload.contains(prefix));
 
-                    let semantic_verdict = semantic_eval
-                        .evaluate_intent(&action_req.payload, "Unknown Intent")
-                        .await
-                        .unwrap_or_else(|_| ValidateVerdict::ApprovedFailOpen {
-                            warning: "Semantic failed".to_string(),
-                        });
+                    let mut constraint_texts: Vec<String> = vec![];
+                    let mut rule_ids: Vec<String> = vec![];
 
-                    // Check fast-path syntax (if the action fails semantic, we inject constraints immediately)
-                    let mut final_verdict = match semantic_verdict {
-                        ValidateVerdict::DeterministicReject { reasons, .. } => {
-                            ValidateVerdict::DeterministicReject {
-                                reasons,
-                                constraints: constraint_texts.clone(),
-                            }
+                    let mut final_verdict = if has_secrets {
+                        ValidateVerdict::DeterministicReject {
+                            reasons: vec!["Active Secret Scrubbing (LLM06): High-entropy secret detected in payload. Redaction Loop triggered.".to_string()],
+                            constraints: vec!["Never include raw API keys, passwords, or JWTs in tool payloads. Use environment variables instead.".to_string()],
                         }
-                        other => other,
+                    } else {
+                        // Retrieve top constraints
+                        let matched_rules = semantic_eval
+                            .match_constraints(&action_req.payload)
+                            .await
+                            .unwrap_or(vec![]);
+                        constraint_texts = matched_rules
+                            .iter()
+                            .map(|r| r.constraint_text.clone())
+                            .collect();
+                        rule_ids = matched_rules.iter().map(|r| r.id.clone()).collect();
+
+                        let semantic_verdict = semantic_eval
+                            .evaluate_intent(&action_req.payload, "Unknown Intent")
+                            .await
+                            .unwrap_or_else(|_| ValidateVerdict::ApprovedFailOpen {
+                                warning: "Semantic failed".to_string(),
+                            });
+
+                        // Check fast-path syntax (if the action fails semantic, we inject constraints immediately)
+                        match semantic_verdict {
+                            ValidateVerdict::DeterministicReject { reasons, .. } => {
+                                ValidateVerdict::DeterministicReject {
+                                    reasons,
+                                    constraints: constraint_texts.clone(),
+                                }
+                            }
+                            other => other,
+                        }
                     };
 
                     if matches!(
