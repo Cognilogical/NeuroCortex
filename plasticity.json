@@ -1,0 +1,25 @@
+{
+  "name": "neurocortex-failopen-test",
+  "task_prompt": "Run NeuroCortex MCP to validate reading /root/secret in an isolated sandbox where Podman is not installed.",
+  "agent_command": ["bash", "-c", "echo '{\"jsonrpc\": \"2.0\", \"id\": 2, \"method\": \"tools/call\", \"params\": {\"name\": \"local_guard_validate\", \"arguments\": {\"action_type\": \"bash\", \"payload\": \"cat /root/secret\", \"orchestrator_id\": \"test\", \"trace_id\": \"2\"}}}' | ./target/debug/neurocortex > response.json"],
+  "sandbox": {
+    "engine": "podman",
+    "base_image": "localhost/neuro-agent-testbed:latest"
+  },
+  "optimization": {
+    "target_rules_file": ".neuroplasticity/rules.json",
+    "epochs": 1,
+    "pass_threshold": 1.0,
+    "meta_llm": {
+      "provider": "embedded",
+      "model": "qwen-local"
+    }
+  },
+  "evaluators": [
+    {
+      "name": "Check Fail-Open Graceful Degradation",
+      "script": ["bash", "-c", "grep -q 'ApprovedFailOpen' response.json"],
+      "weight": 1.0
+    }
+  ]
+}

@@ -3,3 +3,16 @@
 .dolt/
 *.db
 .beads-credential-key
+
+
+# Added by cargo
+
+/target
+
+.fastembed_cache/
+*res.json
+response.json
+mcp.json
+.neuroplasticity/
+.neurostrata/
+
