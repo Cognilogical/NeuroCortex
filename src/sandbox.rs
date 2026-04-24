@@ -92,8 +92,16 @@ impl SandboxEvaluator {
 
         match execution_result {
             Ok(Ok(output)) => {
-                let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-                let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+                let mut stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+                let mut stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+
+                // Truncate logs to prevent LLM context overflow which causes death spirals and compaction errors
+                if stdout.len() > 500 {
+                    stdout = format!("...[TRUNCATED {} chars]...\n{}", stdout.len() - 500, &stdout[stdout.len() - 500..]);
+                }
+                if stderr.len() > 500 {
+                    stderr = format!("...[TRUNCATED {} chars]...\n{}", stderr.len() - 500, &stderr[stderr.len() - 500..]);
+                }
 
                 if output.status.success() {
                     Ok(ValidateVerdict::SandboxPassLowFidelity {
