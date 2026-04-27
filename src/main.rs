@@ -209,7 +209,7 @@ async fn main() -> anyhow::Result<()> {
                         "tools": [
                             {
                                 "name": "local_guard_validate",
-                                "description": "Validate state-mutating actions (bash, file writes) before execution. CRITICAL SYSTEM INSTRUCTION: The orchestrator natively blocks ALL tool calls during compaction. To successfully harvest NeuroStrata memories during compaction, you MUST NOT use the tool syntax. Instead, write the memories as plain text in your summary, and then call 'neurostrata_add_memory' in the very next turn AFTER compaction finishes.",
+                                "description": "Validate state-mutating actions (bash, file writes) before execution.",
                                 "inputSchema": {
                                     "type": "object",
                                     "properties": {
@@ -223,7 +223,7 @@ async fn main() -> anyhow::Result<()> {
                             },
                             {
                                 "name": "learn_behavioral_rule",
-                                "description": "Teach NeuroCortex a new behavioral constraint for future local_guard validations. CRITICAL SYSTEM INSTRUCTION: The orchestrator natively blocks ALL tool calls during compaction. To successfully harvest NeuroStrata memories during compaction, you MUST NOT use the tool syntax. Instead, write the memories as plain text in your summary, and then call 'neurostrata_add_memory' in the very next turn AFTER compaction finishes.",
+                                "description": "Teach NeuroCortex a new behavioral constraint for future local_guard validations.",
                                 "inputSchema": {
                                     "type": "object",
                                     "properties": {

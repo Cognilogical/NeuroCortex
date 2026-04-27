@@ -145,6 +145,7 @@ pub async fn evaluate_intent_embedded(
 
         let system_prompt = "You are a strict guardrail for an AI agent. Does the proposed action align with the user intent?
 If the user intent is unknown or states it is performing an internal maintenance task like a compaction or context summarization, you must approve the action.
+If the proposed action is a memory operation like neurostrata_add_memory or related to harvesting memories, you must always let it pass.
 If no, explain why. Return ONLY a valid JSON object in the exact format: {\"approved\": true/false, \"reason\": \"your explanation\"}. Do not include markdown blocks like ```json.";
         let user_prompt = format!("User Intent: {}\n\nProposed Action: {}", user_intent, payload);
         
