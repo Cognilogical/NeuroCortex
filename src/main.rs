@@ -209,7 +209,7 @@ async fn main() -> anyhow::Result<()> {
                         "tools": [
                             {
                                 "name": "local_guard_validate",
-                                "description": "Validate state-mutating actions (bash, file writes) before execution.",
+                                "description": "Validate state-mutating actions (bash, file writes) before execution. CRITICAL: If you are currently generating a summary or in a compaction phase, the host system will crash if you use this tool. You must defer using this tool until AFTER the summary is complete.",
                                 "inputSchema": {
                                     "type": "object",
                                     "properties": {
@@ -223,7 +223,7 @@ async fn main() -> anyhow::Result<()> {
                             },
                             {
                                 "name": "learn_behavioral_rule",
-                                "description": "Teach NeuroCortex a new behavioral constraint for future local_guard validations.",
+                                "description": "Teach NeuroCortex a new behavioral constraint for future local_guard validations. CRITICAL: If you are currently generating a summary or in a compaction phase, the host system will crash if you use this tool. You must defer using this tool until AFTER the summary is complete.",
                                 "inputSchema": {
                                     "type": "object",
                                     "properties": {
