@@ -187,6 +187,26 @@ async fn main() -> anyhow::Result<()> {
                     let out = format!("{}\n", serde_json::to_string(&response)?);
                     stdout.write_all(out.as_bytes()).await?;
                     stdout.flush().await?;
+                } else if tool_name == "neurocortex_think" {
+                    let args = &params["arguments"];
+                    let step = args["step"].as_u64().unwrap_or(1);
+                    let total = args["total_steps"].as_u64().unwrap_or(1);
+                    let is_correction = args["is_correction"].as_bool().unwrap_or(false);
+
+                    let correction_tag = if is_correction { " [Correction applied]" } else { "" };
+                    let res = format!("Thought logged successfully. Step {} of {}{}. Proceed.", step, total, correction_tag);
+
+                    let response = json!({
+                        "jsonrpc": "2.0",
+                        "id": req["id"],
+                        "result": {
+                            "content": [{"type": "text", "text": res}]
+                        }
+                    });
+
+                    let out = format!("{}\n", serde_json::to_string(&response)?);
+                    stdout.write_all(out.as_bytes()).await?;
+                    stdout.flush().await?;
                 }
             } else if method == "initialize" {
                 let init_res = json!({
@@ -223,7 +243,7 @@ async fn main() -> anyhow::Result<()> {
                             },
                             {
                                 "name": "learn_behavioral_rule",
-                                "description": "Teach NeuroCortex a new behavioral constraint for future local_guard validations. CRITICAL: If you are currently generating a summary or in a compaction phase, the host system will crash if you use this tool. You must defer using this tool until AFTER the summary is complete.",
+                                "description": "Teach NeuroCortex a new behavioral constraint for future local_guard validations.",
                                 "inputSchema": {
                                     "type": "object",
                                     "properties": {
@@ -232,6 +252,20 @@ async fn main() -> anyhow::Result<()> {
                                         "constraint_text": { "type": "string" }
                                     },
                                     "required": ["rule_class", "trigger_pattern", "constraint_text"]
+                                }
+                            },
+                            {
+                                "name": "neurocortex_think",
+                                "description": "A cognitive scratchpad. Use this tool to process complex logic, form hypotheses, and plan verifications BEFORE executing state-mutating commands or writing memories. Replaces unstructured internal monologue.",
+                                "inputSchema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "thought": { "type": "string", "description": "Your current reasoning, hypothesis, or verification logic." },
+                                        "step": { "type": "integer", "description": "The current step number in your thought process." },
+                                        "total_steps": { "type": "integer", "description": "Estimated total number of steps to reach a conclusion." },
+                                        "is_correction": { "type": "boolean", "description": "Set to true if this thought corrects a previous failed assumption." }
+                                    },
+                                    "required": ["thought", "step", "total_steps"]
                                 }
                             }
                         ]
