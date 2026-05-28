@@ -42,20 +42,29 @@ impl SandboxEvaluator {
         cwd: &str,
     ) -> anyhow::Result<ValidateVerdict> {
         if !self.available {
-            return Ok(ValidateVerdict::ApprovedFailOpen{
-                warning: "No container engine (Podman/Docker) available. Skipping sandbox evaluation. Please install Podman for full security.".to_string() 
+            return Ok(ValidateVerdict::DeterministicReject {
+                reasons: vec!["No container engine (Podman/Docker) available. Sandbox evaluation required. Please install Podman for full security.".to_string()],
+                constraints: vec![],
+            });
+        }
+
+        // Validate and canonicalize cwd to prevent host path exfiltration
+        let canonical_cwd = std::fs::canonicalize(cwd).map_err(|_| anyhow::anyhow!("Invalid cwd path"))?;
+        let cwd_str = canonical_cwd.to_string_lossy().to_string();
+
+        let forbidden_prefixes = ["/etc", "/var/run", "/root", "/sys", "/dev", "/proc", "/boot"];
+        if cwd_str == "/" || forbidden_prefixes.iter().any(|prefix| cwd_str.starts_with(prefix)) {
+            return Ok(ValidateVerdict::DeterministicReject {
+                reasons: vec![format!("Security violation: Attempted to mount forbidden host path {}", cwd_str)],
+                constraints: vec!["Never attempt to interact with or mount sensitive host system paths.".to_string()],
             });
         }
 
         // We only sandbox bash or known script commands for now
         if action_type != "bash" && action_type != "script" {
-            // Fast path: if it's just a file write, maybe we rely purely on deterministic AST
-            // For now, fail open for unsupported action types
-            return Ok(ValidateVerdict::ApprovedFailOpen {
-                warning: format!(
-                    "Sandbox evaluation not supported for action_type: {}",
-                    action_type
-                ),
+            return Ok(ValidateVerdict::DeterministicReject {
+                reasons: vec![format!("Sandbox evaluation not supported for action_type: {}", action_type)],
+                constraints: vec![],
             });
         }
 
@@ -73,7 +82,7 @@ impl SandboxEvaluator {
                 "run",
                 "--rm",
                 "--network=none",
-                &format!("-v={}:/workspace:ro", cwd),
+                &format!("-v={}:/workspace:ro", cwd_str),
                 "--tmpfs=/tmp",
                 "-w=/workspace",
                 "alpine:latest",
@@ -121,16 +130,19 @@ impl SandboxEvaluator {
             }
             Ok(Err(e)) => {
                 warn!("Sandbox execution failed to run: {}", e);
-                Ok(ValidateVerdict::ApprovedFailOpen {
-                    warning: format!("Sandbox execution error: {}", e),
+                Ok(ValidateVerdict::SandboxReject {
+                    reasons: vec![format!("Sandbox execution error: {}", e)],
+                    logs: String::new(),
+                    constraints: vec![],
                 })
             }
             Err(_) => {
                 // Timeout
                 warn!("Sandbox execution timed out after 5 seconds");
-                // Fail open to avoid blocking the primary agent
-                Ok(ValidateVerdict::ApprovedFailOpen {
-                    warning: "Sandbox timed out, bypassing to prevent latency".to_string(),
+                Ok(ValidateVerdict::SandboxReject {
+                    reasons: vec!["Sandbox timed out".to_string()],
+                    logs: String::new(),
+                    constraints: vec![],
                 })
             }
         }

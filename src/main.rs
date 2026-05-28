@@ -59,11 +59,9 @@ async fn main() -> anyhow::Result<()> {
                     let mut final_verdict: ValidateVerdict;
 
                     if *attempts > 3 {
-                        final_verdict = ValidateVerdict::ApprovedFailOpen {
-                            warning: format!(
-                                "Churn limit reached ({} attempts for identical payload). Bypassing ReCognition sandbox to prevent orchestrator lockup.",
-                                attempts
-                            ),
+                        final_verdict = ValidateVerdict::DeterministicReject {
+                            reasons: vec![format!("Churn limit reached ({} attempts for identical payload). Rejecting to prevent orchestrator lockup.", attempts)],
+                            constraints: vec!["You have repeatedly attempted the exact same blocked payload. You must change your approach.".to_string()],
                         };
                     } else {
                         // 1. Active Secret Scrubbing (Mitigates OWASP LLM06)
@@ -90,8 +88,9 @@ async fn main() -> anyhow::Result<()> {
                             let semantic_verdict = semantic_eval
                                 .evaluate_intent(&action_req.payload, "Unknown Intent")
                                 .await
-                                .unwrap_or_else(|_| ValidateVerdict::ApprovedFailOpen {
-                                    warning: "Semantic failed".to_string(),
+                                .unwrap_or_else(|_| ValidateVerdict::DeterministicReject {
+                                    reasons: vec!["Semantic failed".to_string()],
+                                    constraints: vec![],
                                 });
 
                             // Check fast-path syntax (if the action fails semantic, we inject constraints immediately)
@@ -158,15 +157,31 @@ async fn main() -> anyhow::Result<()> {
                     // NEW TOOL: For NeuroPlasticity to sync rules into LanceDB
                     let args = &params["arguments"];
 
+                    let rule_class = args["rule_class"].as_str().unwrap_or("general").to_string();
+                    let trigger_pattern = args["trigger_pattern"].as_str().unwrap_or("*").to_string();
+                    let constraint_text = args["constraint_text"].as_str().unwrap_or("").to_string();
+
+                    // Security: Validate schema and content before persisting
+                    if constraint_text.len() < 10 || constraint_text.len() > 1000 {
+                        let response = json!({
+                            "jsonrpc": "2.0",
+                            "id": req["id"],
+                            "result": {
+                                "content": [{"type": "text", "text": "Failed to sync rule: constraint_text must be between 10 and 1000 characters."}]
+                            }
+                        });
+                        let out = format!("{}\n", serde_json::to_string(&response)?);
+                        stdout.write_all(out.as_bytes()).await?;
+                        stdout.flush().await?;
+                        continue;
+                    }
+
                     let rule = BehavioralRule {
                         id: Uuid::new_v4().to_string(),
                         version: 1,
-                        rule_class: args["rule_class"].as_str().unwrap_or("general").to_string(),
-                        trigger_pattern: args["trigger_pattern"]
-                            .as_str()
-                            .unwrap_or("*")
-                            .to_string(),
-                        constraint_text: args["constraint_text"].as_str().unwrap_or("").to_string(),
+                        rule_class,
+                        trigger_pattern,
+                        constraint_text,
                         hit_count: 0,
                         status: "active".to_string(),
                     };

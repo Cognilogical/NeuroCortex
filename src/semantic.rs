@@ -345,15 +345,17 @@ impl SemanticEvaluator {
                     }
                 } else {
                     error!("Semantic validation API returned unparseable JSON: {}", resp_text);
-                    return Ok(ValidateVerdict::ApprovedFailOpen {
-                        warning: format!("Semantic validation API error: invalid format returned"),
+                    return Ok(ValidateVerdict::DeterministicReject {
+                        reasons: vec!["Semantic validation API error: invalid format returned".to_string()],
+                        constraints: vec![],
                     });
                 }
             }
             Err(e) => {
                 error!("Semantic validation embedded model failed: {}", e);
-                return Ok(ValidateVerdict::ApprovedFailOpen {
-                    warning: "Semantic validation unavailable. Failing open.".to_string(),
+                return Ok(ValidateVerdict::DeterministicReject {
+                    reasons: vec!["Semantic validation unavailable. Failing closed.".to_string()],
+                    constraints: vec![],
                 });
             }
         }
